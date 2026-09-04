@@ -12,6 +12,6 @@ spec:
         autoscaling.knative.dev/max-scale: "5"
     spec:
       containers:
-        - image: mahee004/hello-api:v1
+        - image: mahee004/hello-api:v2
           ports:
             - containerPort: 8080
