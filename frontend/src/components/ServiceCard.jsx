@@ -5,6 +5,7 @@ function ServiceCard({
   service,
   onConvert,
   isConverting,
+  lastUpdated,
 }) {
   const isKnative =
     service.type === 'SCALE_TO_ZERO'
@@ -43,7 +44,7 @@ function ServiceCard({
     return () => {
       cancelled = true
     }
-  }, [service.name])
+  }, [service.name, lastUpdated])
 
   const showApplyButton =
     recommendation &&

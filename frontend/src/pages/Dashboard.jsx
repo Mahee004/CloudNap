@@ -101,13 +101,14 @@ function Dashboard() {
   }, [])
 
 
-  async function handleConvert(service) {
+  async function handleConvert(service, targetTypeOverride = null) {
     const isKnative =
       service.type === 'SCALE_TO_ZERO'
 
-    const targetType = isKnative
-      ? 'HPA'
-      : 'Scale-to-Zero'
+    // Determine target based on override or toggle default
+    const targetType = targetTypeOverride
+      ? (targetTypeOverride === 'HPA' ? 'HPA' : 'Scale-to-Zero')
+      : (isKnative ? 'HPA' : 'Scale-to-Zero')
 
     const confirmed = window.confirm(
       `Convert "${service.name}" to ${targetType}?`
@@ -122,7 +123,7 @@ function Dashboard() {
       setActionMessage('')
       setActionError('')
 
-      if (isKnative) {
+      if (targetType === 'HPA') {
         await convertToHpa(service.name)
       } else {
         await convertToKnative(service.name)
@@ -263,6 +264,7 @@ function Dashboard() {
                         convertingService ===
                         service.name
                       }
+                      lastUpdated={lastUpdated}
                     />
 
                   ))
