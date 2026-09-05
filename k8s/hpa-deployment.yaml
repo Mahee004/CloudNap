@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: hello-api
-          image: mahee004/hello-api:v1
+          image: mahee004/hello-api:v2
 
           ports:
             - containerPort: 8080

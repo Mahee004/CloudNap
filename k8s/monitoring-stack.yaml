@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: monitoring
+  name: prometheus
 
 ---
 
@@ -9,7 +9,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: prometheus
 
 ---
 
@@ -35,7 +35,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus
-    namespace: monitoring
+    namespace: prometheus
 roleRef:
   kind: ClusterRole
   name: prometheus
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: monitoring
+  namespace: prometheus
 
 data:
   prometheus.yml: |
@@ -60,101 +60,63 @@ data:
 
       # Prometheus monitors itself
       - job_name: "prometheus"
-
         static_configs:
           - targets:
               - "localhost:9090"
 
-
-      # Monitor our traffic-test application
-      - job_name: "traffic-test"
-
-        metrics_path: /actuator/prometheus
-
-        kubernetes_sd_configs:
-          - role: pod
-
-            namespaces:
-              names:
-                - default
-
-        relabel_configs:
-
-          # Only Running Pods
-          - source_labels:
-              - __meta_kubernetes_pod_phase
-            action: keep
-            regex: Running
-
-          # Only traffic-test Pods
-          - source_labels:
-              - __meta_kubernetes_pod_label_serving_knative_dev_service
-            action: keep
-            regex: traffic-test
-
-          # Only the user application's port
-          - source_labels:
-              - __meta_kubernetes_pod_container_port_number
-            action: keep
-            regex: "8080"
-
-          # Add service name as a Prometheus label
-          - source_labels:
-              - __meta_kubernetes_pod_label_serving_knative_dev_service
-            target_label: service_name
-
-          # Also save Pod name as a label
-          - source_labels:
-              - __meta_kubernetes_pod_name
-            target_label: pod
-      
-      # Monitor traffic-test when it is an HPA application
-      - job_name: "traffic-test-hpa"
-
-        metrics_path: /actuator/prometheus
-
+      # Monitor Knative service (hello-api-knative)
+      - job_name: "hello-api-knative"
+        metrics_path: /actuator/prometheus  # Adjust to /actuator/prometheus if using Spring Boot
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
                 - default
-
         relabel_configs:
-
-          # Only Running Pods
-          - source_labels:
-              - __meta_kubernetes_pod_phase
+          - source_labels: [__meta_kubernetes_pod_phase]
             action: keep
             regex: Running
-
-          # HPA Deployment Pods use app=<service-name>
-          - source_labels:
-              - __meta_kubernetes_pod_label_app
+          - source_labels: [__meta_kubernetes_pod_label_serving_knative_dev_service]
             action: keep
-            regex: traffic-test
-
-          # Only Spring Boot port
-          - source_labels:
-              - __meta_kubernetes_pod_container_port_number
+            regex: hello-api-knative
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
             action: keep
             regex: "8080"
-
-          # Store application name as service_name
-          - source_labels:
-              - __meta_kubernetes_pod_label_app
+          - source_labels: [__meta_kubernetes_pod_label_serving_knative_dev_service]
             target_label: service_name
-
-          # Store Pod name
-          - source_labels:
-              - __meta_kubernetes_pod_name
+          - source_labels: [__meta_kubernetes_pod_name]
             target_label: pod
+
+      # Monitor HPA deployment (hello-api-hpa)
+      - job_name: "hello-api-hpa"
+        metrics_path: /actuator/prometheus  # Adjust to /actuator/prometheus if using Spring Boot
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_phase]
+            action: keep
+            regex: Running
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: hello-api-hpa
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            action: keep
+            regex: "8080"
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: service_name
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
 ---
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: prometheus
 
 spec:
   replicas: 1
@@ -206,7 +168,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: prometheus
 
 spec:
   selector:
